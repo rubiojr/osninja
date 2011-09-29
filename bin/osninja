@@ -1,0 +1,119 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'fileutils'
+require 'highline/import'
+require 'term/ansicolor'
+
+class String
+  include Term::ANSIColor
+end
+
+begin
+  require 'lib/osninja'
+rescue LoadError
+  require 'osninja'
+end
+include OSNinja
+
+OSNINJA_USER_DATA_DIR = "#{ENV['HOME']}/.osninja/"
+OSNINJA_USER_SCRIPTLET_DIR = OSNINJA_USER_DATA_DIR + 'scriptlets/'
+OSNINJA_USER_CONFIG_DIR = OSNINJA_USER_DATA_DIR + 'config/'
+OSNINJA_SYSTEM_SCRIPTLET_DIR = File.join(File.dirname(__FILE__), '../scriptlets/')
+
+if not File.exist?(OSNINJA_USER_SCRIPTLET_DIR)
+  FileUtils.mkdir_p OSNINJA_USER_SCRIPTLET_DIR 
+end
+if not File.exist?(OSNINJA_USER_CONFIG_DIR)
+  FileUtils.mkdir_p OSNINJA_USER_CONFIG_DIR
+end
+
+SEARCH_DIRS = [
+  OSNINJA_USER_SCRIPTLET_DIR,
+  OSNINJA_SYSTEM_SCRIPTLET_DIR
+] 
+
+SEARCH_DIRS.each do |d|
+  Dir[d + "/*.rb"].each do |s|
+    begin
+      OSNinja::Global.current_source_file = s
+      load s
+    rescue Exception => e
+      Log.debug "Error loading scriptlet #{s}"
+      bt = e.message + "\n    " + e.backtrace.join("\n    ")
+      Log.debug bt
+    end
+  end
+end
+
+# Prune invalid modules
+OSNinja::Scriptlet.modules.each do |mod|
+  if mod.supported_os.nil?
+    OSNinja::Log.debug "Rejecting scriptlet #{mod}"
+    OSNinja::Scriptlet.modules.delete mod
+  end
+  if mod.supported_architectures.nil?
+    Log.debug "Rejecting scriptlet #{mod}"
+    OSNinja::Scriptlet.modules.delete mod
+  end
+end
+
+if ARGV[0].nil?
+  puts
+  puts "Scriptlets Available:\n".bold
+
+  counter = 1
+  OSNinja::Scriptlet.modules.each do |m|
+    next if m.is_hidden?
+    puts "#{counter.to_s.bold}. #{m.description_text}"
+    if not m.tags_available.empty?
+      puts "   #{'tags:'.bold} #{(m.tags_available.map { |t| t.to_s}).join(',')}"
+    end
+    counter += 1
+  end
+
+  s = ask "\nWhich one? "
+  puts 
+  s = s.to_i
+  if (s > OSNinja::Scriptlet.modules.size) or (s < 1)
+    $stderr.puts 'Invalid choice'
+  else
+    mod = OSNinja::Scriptlet.modules[s - 1]
+    params = {}
+    mod.parameters.each do |p|
+      r = ask "#{p}: "
+      params[p] = r
+    end
+    mod.instance_variable_set "@parameters", params
+
+    if not mod.settings.empty? and not File.exist?(mod.user_config_file)
+      mod.write_default_config
+      puts "\nMissing config #{mod.user_config_file}\n\n".red.bold
+      puts "Missing config #{mod.user_config_file}".red.bold
+      puts "Edit the file and configure the settings with the required values first."
+      exit 1
+    end
+    mod.run_scriptlet
+  end
+
+# Run in command mode
+else
+  cmd = ARGV.shift
+  OSNinja::Scriptlet.modules.each do |m|
+    if cmd == m.command_name
+      if m.parameters.size != ARGV.size/2
+        puts "\nCommand #{cmd} requires #{m.parameters.size} parameter(s).\n\n"
+        m.usage
+        exit 1
+      end
+      if not m.settings.empty? and not File.exist?(m.user_config_file)
+        m.write_default_config
+        puts "\nMissing config #{m.user_config_file}\n\n".red.bold
+        puts "Edit the file and configure the settings with the required values first."
+        exit 1
+      end
+      params = Util.parse_params(ARGV)
+      m.instance_variable_set "@parameters", params
+      m.run_scriptlet
+    end
+  end
+end

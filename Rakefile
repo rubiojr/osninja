@@ -1,48 +1,32 @@
 require 'rubygems'
-require 'bundler'
-begin
-  Bundler.setup(:default, :development)
-rescue Bundler::BundlerError => e
-  $stderr.puts e.message
-  $stderr.puts "Run `bundle install` to install missing gems"
-  exit e.status_code
-end
+require 'lib/osninja'
 require 'rake'
 
 require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
+  gem.version = OSNinja::VERSION
   gem.name = "osninja"
   gem.homepage = "http://github.com/rubiojr/osninja"
   gem.license = "MIT"
-  gem.summary = %Q{OS scripts to rule'em all}
-  gem.description = %Q{A collection of system scripts for your favorite operating system}
+  gem.summary = %Q{The Library of Alexandria, at your fingertips}
+  gem.description = %Q{Easily extensible collection of scripts to rule'em all}
   gem.email = "rubiojr@frameos.org"
   gem.authors = ["Sergio Rubio"]
   # Include your dependencies below. Runtime dependencies are required when using your gem,
   # and development dependencies are only needed for development (ie running rake tasks, tests, etc)
   #  gem.add_runtime_dependency 'jabber4r', '> 0.1'
+  gem.add_runtime_dependency 'term-ansicolor'
+  gem.add_runtime_dependency 'rest-client'
+  gem.add_runtime_dependency 'highline'
+  gem.add_runtime_dependency 'run-as-root'
   #  gem.add_development_dependency 'rspec', '> 1.2.3'
 end
 Jeweler::RubygemsDotOrgTasks.new
 
-require 'rake/testtask'
-Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
-  test.verbose = true
-end
+task :default => :build
 
-require 'rcov/rcovtask'
-Rcov::RcovTask.new do |test|
-  test.libs << 'test'
-  test.pattern = 'test/**/test_*.rb'
-  test.verbose = true
-end
-
-task :default => :test
-
-require 'rake/rdoctask'
+require 'rdoc/task'
 Rake::RDocTask.new do |rdoc|
   version = File.exist?('VERSION') ? File.read('VERSION') : ""
 
