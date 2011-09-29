@@ -62,11 +62,11 @@ if ARGV[0].nil?
   puts "Scriptlets Available:\n".bold
 
   counter = 1
-  OSNinja::Scriptlet.modules.each do |m|
+  (OSNinja::Scriptlet.modules.sort{ |a,b| a.command_name <=> b.command_name }).each do |m|
     next if m.is_hidden?
-    puts "#{counter.to_s.bold}. #{m.description_text}"
+    puts "#{counter.to_s.bold}. #{m.command_name.bold}: #{m.description_text}"
     if not m.tags_available.empty?
-      puts "   #{'tags:'.bold} #{(m.tags_available.map { |t| t.to_s}).join(',')}"
+      puts "   #{'tags:'.blue.bold} #{(m.tags_available.map { |t| t.to_s}).join(',')}"
     end
     counter += 1
   end
