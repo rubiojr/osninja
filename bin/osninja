@@ -87,8 +87,8 @@ if ARGV[0].nil?
 
     if not mod.settings.empty? and not File.exist?(mod.user_config_file)
       mod.write_default_config
-      puts "\nMissing config #{mod.user_config_file}\n\n".red.bold
-      puts "Missing config #{mod.user_config_file}".red.bold
+      puts "\nMissing config #{mod.user_config_file}\n".red.bold
+      puts "A default config file has been created for you."
       puts "Edit the file and configure the settings with the required values first."
       exit 1
     end
@@ -107,7 +107,8 @@ else
       end
       if not m.settings.empty? and not File.exist?(m.user_config_file)
         m.write_default_config
-        puts "\nMissing config #{m.user_config_file}\n\n".red.bold
+        puts "\nMissing config #{m.user_config_file}\n".red.bold
+        puts "A default config file has been created for you."
         puts "Edit the file and configure the settings with the required values first."
         exit 1
       end
